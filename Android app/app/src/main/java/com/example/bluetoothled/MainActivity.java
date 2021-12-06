@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
                 while(MainActivity.this.isAlive) {
                     heartBeat();
                     try {
-                        Thread.sleep(1000l);
+                        Thread.sleep(100l);
                     }catch(InterruptedException ie) { return; }
                 }
             }
