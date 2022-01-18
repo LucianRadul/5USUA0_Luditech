@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -24,6 +25,8 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+import java.nio.ByteBuffer;
 
 import static android.bluetooth.BluetoothProfile.GATT;
 
@@ -39,6 +42,8 @@ public class BLEController {
 
     private ArrayList<com.example.bluetoothled.BLEControllerListener> listeners = new ArrayList<>();
     private HashMap<String, BluetoothDevice> devices = new HashMap<>();
+    protected static final UUID CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+
 
     private BLEController(Context ctx) {
         this.bluetoothManager = (BluetoothManager) ctx.getSystemService(Context.BLUETOOTH_SERVICE);
@@ -125,23 +130,74 @@ public class BLEController {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if(null == btGattChar) {
                 for (BluetoothGattService service : gatt.getServices()) {
+                    Log.i("[BLE]", "Service UUID Found: " + service.getUuid().toString());
                     if (service.getUuid().toString().toUpperCase().startsWith("0000FFE0")) {
-                        List<BluetoothGattCharacteristic> gattCharacteristics = service.getCharacteristics();
-                        for (BluetoothGattCharacteristic bgc : gattCharacteristics) {
-                            if (bgc.getUuid().toString().toUpperCase().startsWith("0000FFE1")) {
+                        boolean succes =false;
+                        for (BluetoothGattCharacteristic bgc : service.getCharacteristics()) {
+                            Log.i("[BLE]", "Characteristic UUID Found: " + bgc.getUuid().toString());
+                            if (bgc.getUuid().toString().toUpperCase().startsWith("0000FFE1")||bgc.getUuid().toString().toUpperCase().startsWith("0000FFE2")||bgc.getUuid().toString().toUpperCase().startsWith("0000FFE3")) {
                                 int chprop = bgc.getProperties();
                                 if (((chprop & BluetoothGattCharacteristic.PROPERTY_WRITE) | (chprop & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)) > 0) {
+                                    if ((chprop & BluetoothGattCharacteristic.PROPERTY_NOTIFY)  > 0) {
+                                        if(setCharacteristicNotification(bgc, gatt,true)) {
+                                            Log.i("[BLE]", "Subscription succeed");
+                                        }
+                                        else{
+                                            Log.w("[BLE]", "Subscription failed");
+                                        }
+                                    }
                                     btGattChar = bgc;
                                     Log.i("[BLE]", "CONNECTED and ready to send");
-                                    fireConnected();
+                                    succes=true;
                                 }
+
                             }
+                        }
+                        if(succes){
+                            fireConnected();
                         }
                     }
                 }
             }
         }
+
+        public boolean setCharacteristicNotification(BluetoothGattCharacteristic characteristic, BluetoothGatt gatt,
+                                                     boolean enable) {
+            gatt.setCharacteristicNotification(characteristic, enable);
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID);
+            boolean succes = false;
+            if(descriptor != null) {
+                descriptor.setValue(enable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : new byte[]{0x00, 0x00});
+                succes = gatt.writeDescriptor(descriptor); //descriptor write operation successfully started?
+            }
+            else{
+                Log.i("[BLE]","descriptor is null");
+            }
+            return succes; //descriptor write operation successfully started?
+        }
+
+        @Override
+        public void onCharacteristicChanged (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
+//            Log.d("[BLE]","reading new notified message");
+            bluetoothGatt.readCharacteristic(characteristic);
+            byte [] s = characteristic.getValue(); //convert incoming byte array to string
+            int x = ((s[0] ) << 8) | (s[1] );
+            int y = ((s[2] ) << 8) | (s[3] );
+            int z = ((s[4] ) << 8) | (s[5] );
+            MainActivity.getInstance().logx(String.valueOf(x));
+            MainActivity.getInstance().logy(String.valueOf(y));
+            MainActivity.getInstance().logz(String.valueOf(z));
+        }
+
     };
+
+    private boolean setCharacteristicNotification(BluetoothGattCharacteristic characteristic,boolean enabled) {
+        if (bluetoothGatt == null) {
+            Log.w("[BLE]", "BluetoothGatt not initialized");
+            return false;
+        }
+        return bluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+    }
 
     private void fireDisconnected() {
         for(com.example.bluetoothled.BLEControllerListener l : this.listeners)

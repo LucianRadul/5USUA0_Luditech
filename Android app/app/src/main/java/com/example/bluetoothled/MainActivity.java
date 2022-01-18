@@ -4,6 +4,7 @@ package com.example.bluetoothled;
         import androidx.appcompat.app.AppCompatActivity;
         import androidx.core.app.ActivityCompat;
         import androidx.core.content.ContextCompat;
+        import androidx.core.content.res.ResourcesCompat;
 
         import android.Manifest;
         import android.annotation.SuppressLint;
@@ -23,12 +24,15 @@ package com.example.bluetoothled;
 
 public class MainActivity extends AppCompatActivity implements BLEControllerListener {
     private TextView logView;
-    private TextView Button;
+    private TextView xValue;
+    private TextView yValue;
+    private TextView zValue;
     private Button connectButton;
     private Button disconnectButton;
     private Button switchLEDButton;
     private Button readDataButton;
 //    private ImageView checkbox;
+    private static MainActivity instance;
 
     private BLEController bleController;
     private RemoteControl remoteControl;
@@ -43,11 +47,14 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        instance = this;
 
         this.bleController = BLEController.getInstance(this);
         this.remoteControl = new RemoteControl(this.bleController);
 
-        this.Button = findViewById(R.id.Button);
+        this.xValue = findViewById(R.id.xValue);
+        this.yValue = findViewById(R.id.yValue);
+        this.zValue = findViewById(R.id.zValue);
 //        this.checkbox = findViewById(R.id.ButtonCheck);
 
         this.logView = findViewById(R.id.logView);
@@ -62,6 +69,10 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
         checkPermissions();
 
         disableButtons();
+    }
+
+    public static MainActivity getInstance(){
+        return instance;
     }
 
     public void startHeartBeat() {
@@ -96,14 +107,17 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
         String s = this.remoteControl.readBluetooth();
 //        log("Data read: " + s);
         if(s.equals("3")){
-            logbutton("Button pressed !");
+            logx("Button pressed !");
+//            checkbox.setColorFilter(ResourcesCompat.getColor(getResources(), R.color.black, null));
 //            checkbox.setColorFilter(R.color.Red);
-//            checkbox.setColorFilter(ContextCompat.getColor(Context, R.color.Red), android.graphics.PorterDuff.Mode.SRC_IN);
+//            checkbox.setColorFilter(ContextCompat.getColor((android.content.Context) Context, R.color.Red), android.graphics.PorterDuff.Mode.SRC_IN);
+//            checkbox.setImageDrawable(@android:drawable/checkbox_off_background);
         }
         else if(s.equals("4")){
-            logbutton("Button released");
-            ImageViewCompat.setColorFilter(ResourcesCompat.getColor(getResources(), R.color.Luditech_yellow, null));
+            logx("Button released");
+//            checkbox.setColorFilter(ResourcesCompat.getColor(getResources(), R.color.Luditech_yellow, null));
 //            checkbox.setBackgroundColor(.getColor(R.color.black));
+//            checkbox.setColorFilter(ContextCompat.getColor((android.content.Context) Context, R.color.Luditech_yellow), android.graphics.PorterDuff.Mode.SRC_IN);
         }
     }
 
@@ -113,8 +127,8 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
             @Override
             public void onClick(View v) {
                 connectButton.setEnabled(false);
-                log("Connecting...");
                 bleController.connectToDevice(deviceAddress);
+                log("Connecting...");
             }
         });
     }
@@ -162,16 +176,32 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
                 disconnectButton.setEnabled(false);
                 switchLEDButton.setEnabled(false);
                 readDataButton.setEnabled(false);
-                stopHeartBeat();
+//                stopHeartBeat();
             }
         });
     }
 
-    private void logbutton(final String text) {
+    public void logx(final String text) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Button.setText(text);
+                xValue.setText(text);
+            }
+        });
+    }
+    public void logy(final String text) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                yValue.setText(text);
+            }
+        });
+    }
+    public void logz(final String text) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                zValue.setText(text);
             }
         });
     }
@@ -244,7 +274,7 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
                 disconnectButton.setEnabled(true);
                 switchLEDButton.setEnabled(true);
                 readDataButton.setEnabled(true);
-                startHeartBeat();
+//                startHeartBeat();
             }
         });
     }
@@ -257,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
             @Override
             public void run() {
                 connectButton.setEnabled(true);
-                stopHeartBeat();
+//                stopHeartBeat();
             }
         });
         this.isLEDOn = false;
@@ -268,6 +298,6 @@ public class MainActivity extends AppCompatActivity implements BLEControllerList
         log("Device " + name + " found with address " + address);
         this.deviceAddress = address;
         this.connectButton.setEnabled(true);
-        stopHeartBeat();
+//        stopHeartBeat();
     }
 }

@@ -21,8 +21,8 @@ public class RemoteControl {
     //private final static int a = 0;
     private final static byte VALUE_OFF = 0x0;
     private final static byte VALUE_ON = (byte)0xFF;
-    private final static byte value_on = 0x31;
-    private final static byte value_off = 0x30;
+    private final static byte value_on = 0x01;
+    private final static byte value_off = 0x00;
 
     private BLEController bleController;
 
@@ -31,12 +31,12 @@ public class RemoteControl {
     }
 
     private byte [] createControlWord(byte type, byte ... args) {
-        byte [] command = new byte[args.length + 3];
+        byte [] command = new byte[args.length];
 //        command[0] = START;
 //        command[1] = type;
 //        command[2] = (byte)args.length;
         for(int i=0; i<args.length; i++)
-            command[i+3] = args[i];
+            command[i] = args[i];
 
         return command;
     }
@@ -53,7 +53,8 @@ public class RemoteControl {
         String s = new String("There is no data yet");
         if(data!=null){
             // byte[] to string
-            s = new String(data, StandardCharsets.UTF_8);
+//            s = new String(data, StandardCharsets.UTF_8);
+            s = new String(data);
         }
         return s;
     }
